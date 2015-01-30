@@ -96,23 +96,19 @@ $(function(){
 		};
 	}
 	var source = new Can('canvas-source');
-	source.initImage('img.jpg',function(){
+	source.initImage('img.bmp',function(){
 		var array = source.getArray();
 
 		// gaussian blur
-		//var matrix = [[ 1, 2, 1],
-									//[ 2, 4, 2],
-									//[ 1, 2, 1]];
+		//var matrix = [[ 1, 2, 1], [ 2, 4, 2], [ 1, 2, 1]];
 		//var ratio = 1.0/16.0;
 
 		// Sobel
-		var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
-		var ratio = 1.0/4.0;
+		//var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
+		//var ratio = 1.0/4.0;
 
-		//var matrix = [ [0,1,0 ], [ 1, -4, 1 ], [ 0,1,0 ] ];
-		//var matrix = [ [1,0,-1 ], [ 2, 0, -2 ], [ 1,0,-1 ] ];
-		//var matrix = [ [0,0,0 ], [ -1, 2, -1 ], [ 0,0,0 ] ];
-		//var ratio = 1;
+		var matrix = [ [0,-1,0 ], [ -1, 5, -1 ], [ 0,-1,0 ] ];
+
 		array = convolution(array, matrix);
 
 		var destination = new Can('canvas-destination');
@@ -150,25 +146,5 @@ $(function(){
 			}
 		}
 		return result;
-	}
-	function rouge(array){
-		for(var line = 1, lines = array.length - 1; line < lines; line++){
-			for(var column = 1, columns = array[line].length - 1; column < columns; column++){
-
-				if(array[line][column].red > 127) array[line][column].red = 255;
-				else if(array[line][column].red  < 127) array[line][column].red = 0;
-
-			}
-		}
-	}
-	function reverseImage(array){
-		for(var line = 0, lines = array.length; line < lines; line++){
-			for(var column = 0, columns = array[line].length; column < columns; column++){
-				array[line][column].red = 255 -array[line][column].red ;
-				array[line][column].green= 255 -array[line][column].green;
-				array[line][column].blue= 255 -array[line][column].blue;
-				array[line][column].alpha= 255;
-			}
-		}
 	}
 });
