@@ -106,36 +106,30 @@ $(function(){
 		//var ratio = 1.0/16.0;
 
 		// Sobel
-		//var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
-		//var ratio = 1.0/4.0;
+		var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
+		var ratio = 1.0/4.0;
 
 		//var matrix = [ [0,1,0 ], [ 1, -4, 1 ], [ 0,1,0 ] ];
-		var matrix = [ [1,0,-1 ], [ 2, 0, -2 ], [ 1,0,-1 ] ];
-		var ratio = 1;
-		array = convolution(array, matrix, ratio);
+		//var matrix = [ [1,0,-1 ], [ 2, 0, -2 ], [ 1,0,-1 ] ];
+		//var matrix = [ [0,0,0 ], [ -1, 2, -1 ], [ 0,0,0 ] ];
+		//var ratio = 1;
+		array = convolution(array, matrix);
 
 		var destination = new Can('canvas-destination');
 		destination.buildPixelsFromGrey(array)
 		destination.display();
 	});
 
-	function reverseImage(array){
-		for(var line = 0, lines = array.length; line < lines; line++){
-			for(var column = 0, columns = array[line].length; column < columns; column++){
-				array[line][column].red = 255 -array[line][column].red ;
-				array[line][column].green= 255 -array[line][column].green;
-				array[line][column].blue= 255 -array[line][column].blue;
-				array[line][column].alpha= 255;
-			}
-		}
-	}
 
 	function convolution(array, matrix, ratio){
 		// default ratio is 1
-		ratio = ratio|1;
-		var result = array.slice();
+		var m = matrix.reduce(function(a, b) { return a.concat(b); });
+		ratio = ratio||m.reduce(function(a,b){return a + b;})||1;
+		// copy of the array
+		var result = JSON.parse(JSON.stringify(array));
 		var matrixSize = matrix.length;
 		var padding = Math.floor(matrixSize/2);
+
 
 		for(var line = padding, lines = array.length - padding; line < lines; line++){
 			for(var column = padding, columns = array[line].length - padding; column < columns; column++){
@@ -143,11 +137,12 @@ $(function(){
 
 				for(var matrixLine = -padding; matrixLine <= padding; matrixLine ++){
 					for(var matrixColumn = -padding; matrixColumn <= padding; matrixColumn ++){
-						val += matrix[matrixLine+padding][matrixColumn+padding] * array[line + matrixLine][column + matrixColumn].grey;
+						var valeur = matrix[matrixLine+padding][matrixColumn+padding] * array[line + matrixLine][column + matrixColumn].grey;
+						val += valeur;
 					}
 				}
 
-				val = Math.abs(ratio*val);
+				val = Math.round(Math.abs(ratio*val));
 
 				if(val > 255) result[line][column].grey = 255;
 				else if(val  < 0) result[line][column].grey = 0;
@@ -163,6 +158,16 @@ $(function(){
 				if(array[line][column].red > 127) array[line][column].red = 255;
 				else if(array[line][column].red  < 127) array[line][column].red = 0;
 
+			}
+		}
+	}
+	function reverseImage(array){
+		for(var line = 0, lines = array.length; line < lines; line++){
+			for(var column = 0, columns = array[line].length; column < columns; column++){
+				array[line][column].red = 255 -array[line][column].red ;
+				array[line][column].green= 255 -array[line][column].green;
+				array[line][column].blue= 255 -array[line][column].blue;
+				array[line][column].alpha= 255;
 			}
 		}
 	}
