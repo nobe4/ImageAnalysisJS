@@ -108,7 +108,7 @@ $(function(){
 		// Sobel
 		var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
 		var ratio = 1.0/4.0;
-		convolution(array, matrix, ratio);
+		array = convolution(array, matrix, ratio);
 
 		var destination = new Can('canvas-destination');
 		destination.buildPixelsFromGrey(array)
@@ -127,26 +127,28 @@ $(function(){
 	}
 
 	function convolution(array, matrix, ratio){
+		var result = array.slice();
 		var matrixSize = matrix.length;
 		var padding = Math.floor(matrixSize/2);
 
 		for(var line = 1, lines = array.length - 1; line < lines; line++){
 			for(var column = 1, columns = array[line].length - 1; column < columns; column++){
 				var val = 0;
+
 				for(var matrixLine = -padding; matrixLine <= padding; matrixLine ++){
 					for(var matrixColumn = -padding; matrixColumn <= padding; matrixColumn ++){
-						val += matrix[matrixLine+1][matrixColumn+1] * array[line + matrixLine][column + matrixColumn].grey;
+						val += matrix[matrixLine+padding][matrixColumn+padding] * array[line + matrixLine][column + matrixColumn].grey;
 					}
 				}
 
 				val = Math.abs(ratio*val);
 
-
-				if(val > 255) array[line][column].grey = 255;
-				else if(val  < 0) array[line][column].grey = 0;
-				else array[line][column].grey = val;
+				if(val > 255) result[line][column].grey = 255;
+				else if(val  < 0) result[line][column].grey = 0;
+				else result[line][column].grey = val;
 			}
 		}
+		return result;
 	}
 	function rouge(array){
 		for(var line = 1, lines = array.length - 1; line < lines; line++){
