@@ -106,8 +106,12 @@ $(function(){
 		//var ratio = 1.0/16.0;
 
 		// Sobel
-		var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
-		var ratio = 1.0/4.0;
+		//var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
+		//var ratio = 1.0/4.0;
+
+		//var matrix = [ [0,1,0 ], [ 1, -4, 1 ], [ 0,1,0 ] ];
+		var matrix = [ [1,0,-1 ], [ 2, 0, -2 ], [ 1,0,-1 ] ];
+		var ratio = 1;
 		array = convolution(array, matrix, ratio);
 
 		var destination = new Can('canvas-destination');
@@ -127,12 +131,14 @@ $(function(){
 	}
 
 	function convolution(array, matrix, ratio){
+		// default ratio is 1
+		ratio = ratio|1;
 		var result = array.slice();
 		var matrixSize = matrix.length;
 		var padding = Math.floor(matrixSize/2);
 
-		for(var line = 1, lines = array.length - 1; line < lines; line++){
-			for(var column = 1, columns = array[line].length - 1; column < columns; column++){
+		for(var line = padding, lines = array.length - padding; line < lines; line++){
+			for(var column = padding, columns = array[line].length - padding; column < columns; column++){
 				var val = 0;
 
 				for(var matrixLine = -padding; matrixLine <= padding; matrixLine ++){
