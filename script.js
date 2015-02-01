@@ -81,7 +81,9 @@ $(function(){
 				}
 			}
 			imageDataDump = imageData;
+			return this;
 		}
+
 		function display(pixels){
 			context.putImageData(imageDataDump, 0, 0);
 		}
@@ -95,31 +97,42 @@ $(function(){
 			display : display
 		};
 	}
+
 	var source = new Can('canvas-source');
-	source.initImage('img.bmp',function(){
+	source.initImage('cube.jpg',function(){
 		var array = source.getArray();
+		(new Can('canvas-source-grey')).buildPixelsFromGrey(array).display();
 
 		// gaussian blur
-		//var matrix = [[ 1, 2, 1], [ 2, 4, 2], [ 1, 2, 1]];
-		//var ratio = 1.0/16.0;
+		var gaussianMatrix = [[ 1, 2, 1], [ 2, 4, 2], [ 1, 2, 1]];
+		var gaussianRatio = 1.0/16.0;
+		var gaussianArray = convolution(array, gaussianMatrix, gaussianRatio);
 
 		// Sobel
-		//var matrix = [ [1,2,1 ], [ 0, 0, 0 ], [ -1,-2,-1 ] ];
-		//var ratio = 1.0/4.0;
+		var sobelMatrix = [[+2, +3, +1], [0, 0, 0], [-1, -3, -2]];
+		var sobelRatio = 1.0/6.0;
+		var verticalEdges = convolution(gaussianArray, sobelMatrix, sobelRatio);
 
-		var matrix = [ [0,-1,0 ], [ -1, 5, -1 ], [ 0,-1,0 ] ];
+		// Sobel Hor
+		var sobelHorMatrix = [[+1, 0, -2], [+3, 0, -3], [+2, 0, -1]];
+		var sobelHorRatio = 1.0/6.0;
+		var horizontalEdges = convolution(gaussianArray, sobelHorMatrix, sobelHorRatio);
 
-		array = convolution(array, matrix);
+		var allEdges = add(verticalEdges, horizontalEdges);
 
-		var destination = new Can('canvas-destination');
-		destination.buildPixelsFromGrey(array)
-		destination.display();
+		(new Can('canvas-edges')).buildPixelsFromGrey(allEdges).display();
+
+		var houghImage = hough(allEdges);
+
+		var result = drawLines(houghImage,array);
+
+		(new Can('canvas-destination')).buildPixelsFromGrey(result).display();
 	});
 
 
 	function convolution(array, matrix, ratio){
 		// default ratio is 1
-		var m = matrix.reduce(function(a, b) { return a.concat(b); });
+		var m = matrix.reduce(function(a, b){return a.concat(b);});
 		ratio = ratio||m.reduce(function(a,b){return a + b;})||1;
 		// copy of the array
 		var result = JSON.parse(JSON.stringify(array));
@@ -146,5 +159,84 @@ $(function(){
 			}
 		}
 		return result;
+	}
+
+	function hough(array){
+		var threshold = 70;
+		var maxHough = 0;
+
+		var houghAccumulateur = zeros([360,Math.hypot(300,400)]);
+		var result = zeros([360,Math.hypot(300,400)]);
+
+		for(var line = 1, lines = array.length -1 ; line < lines; line++){
+			for(var column = 1, columns = array[line].length -1 ; column < columns; column++){
+				if(array[line][column].grey > threshold){
+					var rho = 0;
+					for(var angle = 0; angle < 360; angle ++){
+						//debugger;
+						rho = Math.round(column * 1.0 * Math.cos(degToRad(angle)) + line * 1.0 * Math.sin(degToRad(angle)));
+						houghAccumulateur[angle][rho] += 1;
+						if(houghAccumulateur[angle][rho] > maxHough && rho > 1){
+							maxHough = houghAccumulateur[angle][rho];
+						}
+					}
+				}
+			}
+		}
+
+		for(var line = 0, lines = result.length ; line < lines; line++){
+			for(var column = 0, columns = result[line].length ; column < columns; column++){
+				result[line][column]= Math.round(houghAccumulateur[line][column] * (255.0 / maxHough)) ;
+			}
+		}
+
+		return result;
+	}
+
+	function drawLines(houghArray, imageArray){
+		var result = JSON.parse(JSON.stringify(imageArray));
+		var thresholdhough = 180;
+
+		for(var line = 0, lines = result.length ; line < lines; line++){
+			for(var column = 0, columns = result[line].length ; column < columns; column++){
+				result[line][column].grey -= 20;
+				if(result[line][column].grey < 0) result[line][column].grey = 0;
+			}
+		}
+
+		for(var line = 1, lines = houghArray.length - 1; line < lines; line++){
+			for(var column = 1, columns = houghArray[line].length - 1 ; column < columns; column++){
+				if(houghArray[line][column] > thresholdhough){
+					for (var i = 0; i < imageArray.length; i++) {
+					var j = Math.round((column - (i * Math.cos ( degToRad ( line )  ))) / Math.sin ( degToRad ( line  )  ));
+						if ( j > 0 && j < imageArray.length  ) {
+							result[j][i].grey = 255;
+						}
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	function add(array1, array2){
+		var result = JSON.parse(JSON.stringify(array1));
+		for(var line = 0, lines = result.length ; line < lines; line++){
+			for(var column = 0, columns = result[line].length ; column < columns; column++){
+				result[line][column].grey += array2[line][column].grey;
+				if(result[line][column].grey > 255) result[line][column].grey = 255;
+			}
+		}
+		return result;
+	}
+
+	// utilities
+	function degToRad(deg){ return deg * 3.14159265359 / 180.0; }
+	function zeros(dimensions) {
+		    var array = [];
+				for (var i = 0; i < dimensions[0]; ++i) {
+					array.push(dimensions.length == 1 ? 0 : zeros(dimensions.slice(1)));
+				}
+				return array;
 	}
 });
